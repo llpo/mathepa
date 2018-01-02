@@ -1,0 +1,18 @@
+language: php
+dist: trusty
+sudo: false
+
+php:
+  - 7.1
+  - 7.2
+  - nightly
+
+install:
+  - composer install --prefer-dist
+
+matrix:
+  allow_failures:
+    - php: nightly
+  fast_finish: true
+
+script: phpunit
