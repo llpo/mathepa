@@ -1,0 +1,13 @@
+# Files
+composer.lock
+.ash_history
+.php_history
+.htaccess
+tags
+
+# Folders
+.pdepend
+vendor
+cache
+tmp/*
+!tmp/.gitkeep

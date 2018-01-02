@@ -1,0 +1,29 @@
+version: '3.3'
+
+services:
+    php:
+        user: $USER
+        image: sandbox-mathepa
+        build:
+            context: .
+            args:
+                - user=$USER
+                - home=/srv/app
+        working_dir: /srv/app
+        volumes:
+            - .:/srv/app
+    test:
+        user: $USER
+        image: sandbox-mathepa
+        command: phpunit --testdox
+        working_dir: /srv/app
+        volumes:
+            - .:/srv/app
+    install:
+        user: $USER
+        restart: 'no'
+        image: sandbox-mathepa
+        command: composer install --no-interaction --prefer-dist
+        working_dir: /srv/app
+        volumes:
+            - .:/srv/app
