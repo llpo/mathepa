@@ -193,17 +193,17 @@ class Token
 
     /**
      *  @param string $name
-     *  @throws \DomainException
+     *  @throws \UnexpectedValueException
      *  @return miexed
      */
     public function __get($name)
     {
-        if (isset($this->$name)) {
-            return $this->$name;
+        if (!isset($this->$name)) {
+            throw new \UnexpectedValueException(
+                sprintf('Unknown property name "%s"', $name)
+            );
         }
 
-        throw new \DomainException(
-            sprintf('Unknown property name "%s"', $name)
-        );
+        return $this->$name;
     }
 }
