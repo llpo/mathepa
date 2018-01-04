@@ -6,6 +6,9 @@
         <exclude name="PSR2.Namespaces.UseDeclaration" />
         -->
     </rule>
+    <rule ref="Squiz.Functions.MultiLineFunctionDeclaration.NewlineBeforeOpenBrace">
+        <severity>0</severity>
+    </rule>
     <rule ref="Generic.Files.LineLength">
         <properties>
             <property name="lineLimit" value="90"/>
