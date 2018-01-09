@@ -4,6 +4,7 @@ namespace Mathepa;
 
 // Exceptions
 use Mathepa\Exception\InvalidExpressionException;
+use Mathepa\Exception\InvalidVariableException;
 
 /**
  * Class Expression
@@ -18,7 +19,7 @@ class Expression
     /**
      * @var \Mathepa\Token[]
      */
-    private $tokens;
+    private $expression;
 
     /**
      * @param string $expression
@@ -27,7 +28,7 @@ class Expression
      */
     public function __construct(?string $expression = null)
     {
-        $this->tokens = [];
+        $this->expression = [];
 
         if ($expression !== null) {
             $this->setExpression($expression);
@@ -42,7 +43,16 @@ class Expression
      */
     public function evaluate()
     {
-        $expression = Parser::parse($this->variables, ...$this->tokens);
+        $variables = [];
+
+        // Only process variables used by the expression
+        foreach ($this->expression as $token) {
+            if ($token->type === Token::TYPE_VARIABLE) {
+                $variables[$token->value] = $this->variables->get($token->value);
+            }
+        }
+
+        $expression = Parser::parse($variables, ...$this->expression);
 
         if ($expression === null) {
             throw new InvalidExpressionException('No expression set');
@@ -53,7 +63,7 @@ class Expression
         try {
             eval('$result = ' . $expression . ';');
             if ($result === null) {
-                throw new \Throwable('Unexpected null result');
+                throw new \Throwable('Unexpected NULL value as result');
             }
         } catch (\Throwable $error) {
             throw new InvalidExpressionException($error->getMessage());
@@ -72,21 +82,15 @@ class Expression
      * @param string $name
      * @param string $expression
      * @throws \Mathepa\Exception\InvalidExpressionException
+     * @throws \Mathepa\Exception\InvalidVariableException
      * @return self
      */
     public function setVariable(string $name, string $expression): self
     {
+        // If no exceptions, everything fine
         $tokens = $this->anatomize($expression);
 
-        foreach ($tokens as $token) {
-            if ($token->type === Token::TYPE_VARIABLE) {
-                throw new \UnexpectedValueException(
-                    'Use of nested variables is not supported'
-                );
-            }
-        }
-
-        $this->variables->set($name, $expression);
+        $this->variables->set($name, ...$tokens);
 
         return $this;
     }
@@ -108,17 +112,17 @@ class Expression
      */
     public function setExpression(string $expression): self
     {
-        $this->tokens = $this->anatomize($expression);
+        $this->expression = $this->anatomize($expression);
 
         return $this;
     }
 
     /**
-     * @var string $expression e.g. '(2 - 1) + 3'
+     * @param string $expression e.g. '(2 - 1) + 3'
      * @throws \Mathepa\Exception\InvalidExpressionException
      * @return \Mathepa\Token[]
      */
-    protected function anatomize(string $expression)
+    protected function anatomize(string $expression): array
     {
         $tokens = Lexer::tokenize($expression);
         if (empty($tokens)) {
@@ -132,7 +136,6 @@ class Expression
 
         $errors = Parser::checkGrammar(...$tokens);
         if (!empty($errors)) {
-            var_dump($tokens);
             throw new InvalidExpressionException(
                 implode("\n", $errors)
             );

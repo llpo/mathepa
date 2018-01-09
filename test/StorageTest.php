@@ -55,7 +55,10 @@ class StorageTest extends TestCase
     {
         // Varialbe name cannot begin  with a digit
         $this->expectException(InvalidVariableException::class);
-        (new Storage())->set('2var', '1 + 2');
+        (new Storage())->set(
+            '2var',
+            ...[new Token(Token::TYPE_LITERAL, '2', 0, 1, 0)]
+        );
     }
 
     /**
@@ -70,17 +73,69 @@ class StorageTest extends TestCase
     /**
      * @test
      */
+    public function variablesWithCircularReferencesThrowsAnException()
+    {
+        $vars = new Storage();
+        $this->expectException(InvalidVariableException::class);
+        $this->expectExceptionMessage(
+            'Found circular reference in variable "var1"'
+        );
+        $vars->set(
+            'var1',
+            ...[
+                new Token(Token::TYPE_VARIABLE, 'var2', 0, 1, 0),
+                new Token(Token::TYPE_ARITHMETIC_OPERATOR, '+', 4, 1, 5),
+                new Token(Token::TYPE_VARIABLE, 'var1', 5, 1, 9)
+            ]
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function variablesWithIndirectCircularReferencesThrowsAnException()
+    {
+        $vars = new Storage();
+        $vars->set(
+            'var1',
+            ...[
+                new Token(Token::TYPE_VARIABLE, 'var2', 0, 1, 0),
+                new Token(Token::TYPE_ARITHMETIC_OPERATOR, '+', 4, 1, 5),
+                new Token(Token::TYPE_VARIABLE, 'var3', 5, 1, 9)
+            ]
+        );
+        $vars->set(
+            'var2',
+            ...[new Token(Token::TYPE_LITERAL, '2', 0, 1, 0)]
+        );
+        $this->expectException(InvalidVariableException::class);
+        $this->expectExceptionMessage(
+            'Found circular reference in variable "var1"'
+        );
+        $vars->set(
+            'var3',
+            ...[
+                new Token(Token::TYPE_VARIABLE, 'var2', 0, 1, 0),
+                new Token(Token::TYPE_ARITHMETIC_OPERATOR, '+', 4, 1, 5),
+                new Token(Token::TYPE_VARIABLE, 'var1', 5, 1, 9)
+            ]
+        );
+    }
+
+    /**
+     * @test
+     */
     public function storageObjectsAreIterable()
     {
         $vars = (new Storage())
-            ->set('var1', 1)
-            ->set('var2', 2)
-            ->set('var3', 3);
+            ->set('var1', ...[new Token(Token::TYPE_LITERAL, '1', 0, 1, 0)])
+            ->set('var2', ...[new Token(Token::TYPE_LITERAL, '2', 0, 1, 0)])
+            ->set('var3', ...[new Token(Token::TYPE_LITERAL, '3', 0, 1, 0)]);
 
         $x = 0;
         foreach ($vars as $key => $value) {
             $this->assertEquals('var' . ++$x, $key);
-            $this->assertEquals($x, $value);
+            $this->assertEquals($x, $value[0]->value);
         }
         $this->assertEquals($x, 3);
     }

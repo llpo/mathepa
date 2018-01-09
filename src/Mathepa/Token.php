@@ -20,6 +20,8 @@ class Token
     const TYPE_CLOSING_BRAKET_FUNCTION  = 'closing_bracket_function';
     const TYPE_COMMA_FUNCTION           = 'comma_function';
     const TYPE_VARIABLE                 = 'variable';
+    const TYPE_TERNARY_OPERATOR_THEN  = 'ternary_operator_then';
+    const TYPE_TERNARY_OPERATOR_ELSE    = 'ternary_operator_else';
 
     /**
      * @var array
@@ -35,6 +37,8 @@ class Token
         self::TYPE_CLOSING_BRAKET_FUNCTION,
         self::TYPE_COMMA_FUNCTION,
         self::TYPE_VARIABLE,
+        self::TYPE_TERNARY_OPERATOR_THEN,
+        self::TYPE_TERNARY_OPERATOR_ELSE,
     ];
 
     /**
@@ -92,7 +96,8 @@ class Token
         int $position,
         int $line,
         int $column
-    ) {
+    )
+    {
         $this->setType($type);
         $this->setValue($value);
         $this->setPosition($position);
@@ -189,6 +194,33 @@ class Token
         $this->column = $column;
 
         return $this;
+    }
+
+    /**
+     * Helper function to get a token types by value. No all token types are
+     * supported, only some token types can be mapped by a value.
+     *
+     * @param string $value Supported values: '(', ')', '?', ':'
+     * @throws \UnexpectedValueException
+     * @return string
+     */
+    public static function getTypeByValue(string $value)
+    {
+        switch ($value) {
+            case '(':
+                return Token::TYPE_OPENING_BRAKET;
+            case ')':
+                return Token::TYPE_CLOSING_BRAKET;
+            case '?':
+                return Token::TYPE_TERNARY_OPERATOR_THEN;
+            case ':':
+                return Token::TYPE_TERNARY_OPERATOR_ELSE;
+
+            default:
+                throw new \UnexpectedValueException(
+                    sprintf('Unknown value "%s" or not supported', $value)
+                );
+        }
     }
 
     /**

@@ -50,7 +50,8 @@ class Lexer
         string $expression,
         int $offset = 0,
         ?int $length = null
-    ): \stdClass {
+    ): \stdClass
+    {
         $line = 1;
         $column = 0;
         $length = $length ?? strlen($expression);
@@ -71,39 +72,59 @@ class Lexer
         return (object) ['line' => $line, 'column' => $column];
     }
 
-    /**
-     * Finds closing bracket. This function is sensitive to nested pairs.
+   /**
+     * Find a pair of related tokens, such as brackets ("(" and ")") and
+     * tokens that forms a ternary operator ("?" and ":"). This function is
+     * sensitive to bracket pairs. The first token (aka opening token) is
+     * expected to be at the given offset position.
      *
-     * Given following expression: '(2 + 3 / (4 - 1) + 10) + 2'
-     * It would return the Token ')' in the position 21.
+     * For example, given following expression: '(2 + 3 / (4 - 1) + 10) + 2'
+     * It would return two Token objects:
+     * - Token '(' at postion 0
+     * - Token ')' at position 21
      *
+     * @param string $openingTokenValue
+     * @param string $closingTokenValue
      * @param string $expression
      * @param int $offset
-     * @return \Mathepa\Token|null
+     * @return \Mathepa\Token[]
      */
-    public static function findClosingBracket(
+    public static function findTokenPair(
+        string $tokenValue,
+        string $tokenPairValue,
         string $expression,
         int $offset
-    ): ?Token {
+    ): array
+    {
+        $token = null;
+        $tokenPair = null;
         $length = strlen($expression);
-        if ($length == 0) {
-            return null;
-        }
-
         $open = 0;
         $x = $offset;
-        $x += $expression[$x] === '(' ? 1 : 0;
+
+        if ($expression[$x] === $tokenValue) {
+            $vpos = self::getVerticalPosition($expression, 0, $x + 1);
+            $token = new Token(
+                Token::getTypeByValue($tokenValue),
+                $tokenValue,
+                $x,
+                $vpos->line,
+                $vpos->column
+            );
+            $x++;
+        }
 
         for ($x; $x < $length; $x++) {
-            if ($expression[$x] === ')' && $open == 0) {
+            if ($expression[$x] === $tokenPairValue && $open === 0) {
                 $vpos = self::getVerticalPosition($expression, 0, $x + 1);
-                return new Token(
-                    Token::TYPE_CLOSING_BRAKET,
-                    ')',
+                $tokenPair = new Token(
+                    Token::getTypeByValue($tokenPairValue),
+                    $tokenPairValue,
                     $x,
                     $vpos->line,
                     $vpos->column
                 );
+                break;
             }
             if ($expression[$x] === ')') {
                 $open--;
@@ -112,7 +133,7 @@ class Lexer
             }
         }
 
-        return null;
+        return [$token, $tokenPair];
     }
 
     /**
@@ -126,7 +147,8 @@ class Lexer
     public static function readLiteralToken(
         string $expression,
         int $offset
-    ): ?Token {
+    ): ?Token
+    {
         $subject = substr($expression, $offset);
         $matches = [];
         $vpos = self::getVerticalPosition($expression, 0, $offset + 1);
@@ -142,7 +164,7 @@ class Lexer
             if ($next && !preg_match('/^[\s<>!+\-=\/)%*,]$/', $next)) {
                 throw new InvalidLiteralException(
                     sprintf(
-                        'Invalid literal: "%s" on line %d, at column %d',
+                        'Invalid literal "%s": line %d, column %d',
                         $literal . $next,
                         $vpos->line,
                         $vpos->column
@@ -162,7 +184,7 @@ class Lexer
     }
 
     /**
-     * Tries to read a function starting from a given offset
+     * Tries to read a function token starting from a given offset
      *
      * @param string $expression
      * @throws \Mathepa\Exception\InvalidFunctionException
@@ -172,7 +194,8 @@ class Lexer
     public static function readFunctionToken(
         string $expression,
         int $offset
-    ): ?Token {
+    ): ?Token
+    {
         $subject = substr($expression, $offset);
         $regexp = '/^(' . self::NAME_REGEX . ')(\s*\()/';
         $matches = [];
@@ -181,22 +204,24 @@ class Lexer
         if (!preg_match($regexp, $subject, $matches, PREG_OFFSET_CAPTURE)) {
             return null;
         }
-
         $name = $matches[1][0];
-        if (!self::findClosingBracket($subject, strlen($matches[0][0]))) {
+
+        list(, $token) = self::findTokenPair('(', ')', $subject, strlen($matches[0][0]));
+        if ($token === null) {
             throw new SyntaxErrorException(
                 sprintf(
-                    'Missing bracket after function "%s" on line %d, at column %d',
+                    'Missing bracket after function "%s": line %d, column %d',
                     $name,
                     $vpos->line,
                     $vpos->column
                 )
             );
         }
+
         if (!in_array($name, self::FUNCTIONS)) {
             throw new InvalidFunctionException(
                 sprintf(
-                    'Unknown function name "%s" on line %d, at column %d',
+                    'Unknown function name "%s": line %d, column %d',
                     $name,
                     $vpos->line,
                     $vpos->column
@@ -214,7 +239,7 @@ class Lexer
     }
 
     /**
-     * Tries to read a variable starting from a given offset
+     * Tries to read a variable token starting from a given offset
      *
      * @param string $expression
      * @param int $offset
@@ -223,7 +248,8 @@ class Lexer
     public static function readVariableToken(
         string $expression,
         int $offset
-    ): ?Token {
+    ): ?Token
+    {
         $subject = substr($expression, $offset);
         $regexp = '/^(' . self::NAME_REGEX . ')\s*([^(A-Za-z0-9]|$)/';
         $matches = [];
@@ -251,7 +277,10 @@ class Lexer
      * @throws \UnexpectedValueException
      * @return \Mathepa\Token[]
      */
-    public static function splitByOperator(array $tokens, Token $literalToken): array
+    public static function splitByOperator(
+        array $tokens,
+        Token $literalToken
+    ): array
     {
         if ($literalToken->type !== Token::TYPE_LITERAL) {
             throw new \UnexpectedValueException(
@@ -298,13 +327,15 @@ class Lexer
     }
 
     /**
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     *
      * Creates tokens from a given expression. This method search for
-     * well formed tokens. If wrong tokens or unclassifiable are found,
-     * a syntax error exception will be thrown. This method neither makes
-     * a "grammar analysis" {@see \Mathepa\Parser::checkGrammar} nor checks
-     * relations between tokens.
+     * well formed tokens and if unclassifiable tokens are found, a syntax
+     * error exception will be thrown.
+     *
+     * This method neither makes a "grammar analysis" nor checks relations
+     * between tokens, except relations between paired tokens like, for
+     * instance: brackets (open <=> close) or ternary operators (? then <=> :).
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @param string
      * @throws \Mathepa\Exception\SyntaxErrorException
@@ -314,7 +345,7 @@ class Lexer
     {
         $tokens = [];
         $length = strlen($expression);
-        $closingGroup = [];
+        $tokensAhead = [];
 
         $pos = 0;
         while ($pos < $length) {
@@ -350,44 +381,64 @@ class Lexer
                         $openingType = Token::TYPE_OPENING_BRAKET;
                         $closingType = Token::TYPE_CLOSING_BRAKET;
                     }
-                    $token = self::findClosingBracket($expression, $pos);
-                    if ($token === null) {
+                    list($token, $tokenPair) = self::findTokenPair(
+                        '(',
+                        ')',
+                        $expression,
+                        $pos
+                    );
+                    if ($tokenPair === null) {
                         throw new SyntaxErrorException(
                             sprintf(
-                                'Unclosed bracket "(" on line %d, at column %d',
+                                'Unclosed bracket "(": line %d, column %d',
                                 $vpos->line,
                                 $vpos->column
                             )
                         );
                     }
-                    $token->setType($closingType);
-                    $closingGroup[$token->position] = $token;
-                    $token = new Token(
-                        $openingType,
-                        '(',
-                        $pos,
-                        $vpos->line,
-                        $vpos->column
+                    $token->setType($openingType);
+                    $tokenPair->setType($closingType);
+                    $tokensAhead[$tokenPair->position] = $tokenPair;
+                    break;
+
+                case '?':
+                    list($token, $tokenPair) = self::findTokenPair(
+                        '?',
+                        ':',
+                        $expression,
+                        $pos
                     );
+                    if ($tokenPair === null) {
+                        throw new SyntaxErrorException(
+                            sprintf(
+                                'Unclosed bracket "(": line %d, column %d',
+                                $vpos->line,
+                                $vpos->column
+                            )
+                        );
+                    }
+                    $tokensAhead[$tokenPair->position] = $tokenPair;
                     break;
 
                 case ')':
-                    if (!isset($closingGroup[$pos])) {
-                        throw new SyntaxErrorException(
+                case ':':
+                    if (!isset($tokensAhead[$pos])) {
+                        throw new \LogicException(
                             sprintf(
-                                'Unclosed bracket "(" on line %d, at column %d',
+                                'Missing token "%s": line %d, column %d',
+                                $char,
                                 $vpos->line,
                                 $vpos->column
                             )
                         );
                     }
-                    $token = $closingGroup[$pos];
+                    $token = $tokensAhead[$pos];
                     break;
 
                 case ',':
                     $token = new Token(
                         Token::TYPE_COMMA_FUNCTION,
-                        ',',
+                        $char,
                         $pos,
                         $vpos->line,
                         $vpos->column
@@ -413,7 +464,7 @@ class Lexer
                     } elseif ($nextChar === $char) {
                         throw new SyntaxErrorException(
                             sprintf(
-                                'Invalid operator "%s" on line %d, at column %d',
+                                'Invalid operator "%s": line %d, column %d',
                                 $char . $nextChar,
                                 $vpos->line,
                                 $vpos->column
@@ -443,7 +494,7 @@ class Lexer
                 default:
                     throw new SyntaxErrorException(
                         sprintf(
-                            'Unexpected character "%s" on line %d, at column %d',
+                            'Unexpected character "%s": line %d, column %d',
                             $char,
                             $vpos->line,
                             $vpos->column

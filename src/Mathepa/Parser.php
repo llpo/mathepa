@@ -4,6 +4,7 @@ namespace Mathepa;
 
 // Exceptions
 use Mathepa\Exception\InvalidExpressionException;
+use Mathepa\Exception\InvalidVariableException;
 use Mathepa\Exception\SyntaxErrorException;
 
 /**
@@ -12,18 +13,34 @@ use Mathepa\Exception\SyntaxErrorException;
 class Parser
 {
     /**
-     * @param \Mathepa\Storage $variables
-     * @param \Mathepa\Token[]
+     * @param \Mathepa\Token[] $variables
+     * @param \Mathepa\Token[] $tokens
      * @throws \Mathepa\Exception\InvalidExpressionException
+     * @throws \Mathepa\Exception\InvalidVariableException
      * @return string|null
      */
-    public static function parse(Storage $variables, Token ...$tokens): ?string
+    public static function parse(array $variables, Token ...$tokens): ?string
     {
         $expression = [];
 
         foreach ($tokens as $token) {
             if ($token->type === Token::TYPE_VARIABLE) {
-                $expression[] = $variables->get($token->value);
+                $name = $token->value;
+                if (!isset($variables[$name])) {
+                    throw new InvalidVariableException(
+                        'Variable "' . $name . '" not found, exception ' .
+                        'maybe caused by a circular reference'
+                    );
+                }
+                $expression[] = self::parse(
+                    array_filter(
+                        $variables,
+                        function ($token) use ($name) {
+                            return $token->value !== $name;
+                        }
+                    ),
+                    ...$variables[$name]
+                );
             } else {
                 $expression[] = $token->value;
             }
@@ -37,10 +54,9 @@ class Parser
     }
 
     /**
-     * Checks the grammar of a mathematic expression. The main rules are
-     * defined in {@see \Mathepa\RULES}. This method check some special cases,
-     * that are not expressible as general rule. Check out the method
-     * for more details.
+     * Checks the grammar of a mathematical expression.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @param \Mathepa\Token[]
      * @return string[]
@@ -49,25 +65,40 @@ class Parser
     {
         $errors = [];
         $previousToken = null;
-        $braketFunctionScope = [];
-        $contextPointer = -1;
+        $bracketFunctionScope = [];
+        $scopePointer = -1;
+        $last = func_num_args() - 1;
 
-        foreach ($tokens as $token) {
-            $key = $previousToken->type ?? null;
-            if (!isset(RULES[$key])) {
-                throw new \UnexpectedValueExpcetion(
-                    sprintf('Unexpected token type "%s"', $previousToken->type)
+        for ($pos = 0; $pos <= $last; $pos++) {
+            $token = $tokens[$pos];
+            if ($pos === 0) {
+                $rules = FIRST_TOKEN_RULES;
+            } else {
+                $rules = BOUND_TOKEN_RULES[$previousToken->type] ?? null;
+                if ($rules === null) {
+                    throw new \UnexpectedValueExpcetion(
+                        sprintf('Unexpected token type "%s"', $previousToken->type)
+                    );
+                }
+            }
+            if (!in_array($token->type, $rules, true)) {
+                $errors[] = sprintf(
+                    'Unexpected token "%s": line %d, column %d',
+                    $token->value,
+                    $token->line,
+                    $token->column
                 );
             }
-            if (!in_array($token->type, RULES[$key], true)) {
+            if ($pos === $last && !in_array($token->type, LAST_TOKEN_RULES, true)) {
                 $errors[] = sprintf(
-                    'Unexpected token "%s" on line %d, at column %d',
+                    'Unexpected token "%s": line %d, column %d',
                     $token->value,
                     $token->line,
                     $token->column
                 );
             }
             $previousToken = $token;
+
             // Check special case: Token::TYPE_COMMA_FUNCTION can be used
             // only inside function brackets.
             switch ($token->type) {
@@ -86,7 +117,7 @@ class Parser
                 $bracketFunctionScope[$scopePointer] !== true
             ) {
                 $errors[] = sprintf(
-                    'Unexpected token "%s" on line %d, at column %d. ' .
+                    'Unexpected token "%s": line %d, column %d. ' .
                         'This token only allowed inside function brackets.',
                     $token->value,
                     $token->line,

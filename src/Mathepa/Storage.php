@@ -2,16 +2,19 @@
 
 namespace Mathepa;
 
-// Exceptioncs
+// Exceptions
 use Mathepa\Exception\InvalidVariableException;
 
 /**
  * Class Storage
- * @author lpo
  */
 class Storage implements \Iterator
 {
     /**
+     * Associative array, where:
+     *  - key => variable name
+     *  - value => array of tokens
+     *
      * @var array
      */
     private $storage;
@@ -26,10 +29,11 @@ class Storage implements \Iterator
 
     /**
      * @param string $name
-     * @param string $expression
+     * @param \Mathepa\Token[] $tokens
      * @throws \Mathepa\Exception\InvalidVariableException
+     * @return self
      */
-    public function set(string $name, string $expression): self
+    public function set(string $name, Token ...$tokens): self
     {
         if (!$this->isValidName($name)) {
             throw new InvalidVariableException(
@@ -40,7 +44,17 @@ class Storage implements \Iterator
                 )
             );
         }
-        $this->storage[$name] = $expression;
+
+        $this->storage[$name] = $tokens;
+        foreach ($this->storage as $varName => $varTokens) {
+            try {
+                $path = [];
+                $this->findCircularReferences($path, $varName, ...$varTokens);
+            } catch (InvalidVariableException $exception) {
+                $this->del($name);
+                throw $exception;
+            }
+        }
 
         return $this;
     }
@@ -48,16 +62,79 @@ class Storage implements \Iterator
     /**
      * @param string $name
      * @throws \Mathepa\Exception\InvalidVariableException
-     * @return string
+     * @return \Mathepa\Token[]
      */
-    public function get(string $name): string
+    public function get(string $name): array
     {
         if (!isset($this->storage[$name])) {
             throw new InvalidVariableException(
                 sprintf('Variable "%s" not set', $name)
             );
         }
-        return $this->storage[$name]; // Oposite of parse ??
+
+        return $this->storage[$name];
+    }
+
+    /**
+     * Delete / unset variable
+     *
+     * @param string $name
+     * @throws \Mathepa\Exception\InvalidVariableException
+     * @return self
+     */
+    public function del(string $name): self
+    {
+        $this->get($name);
+        // If no exception thrown, var with "$name" exists
+        unset($this->storage[$name]);
+
+        return $this;
+    }
+
+    /**
+     * @param string[] &$path Path where to save traversed references
+     * @param string $varName
+     * @param \Mathepa\Token[] $varTokens
+     * @throws \Mathepa\Exception\InvalidVariableException
+     * @return void
+     */
+    protected function findCircularReferences(
+        array &$path,
+        string $varName,
+        Token ...$varTokens
+    ): void
+    {
+        $vars = [];
+        foreach ($varTokens as $token) {
+            if ($token->type !== Token::TYPE_VARIABLE) {
+                continue;
+            }
+            if (!isset($this->storage[$token->value])) {
+                continue;
+            }
+            if (in_array($token->value, $vars, true)) {
+                // Variable could be used more than once in the current
+                // expression, so that:
+                // - There is no need to double check (performance)
+                // - Prevent duplicates in $path that fakes circular references
+                continue;
+            }
+            $vars[] = $token->value;
+            if (in_array($varName, $path, true)) {
+                throw new InvalidVariableException(
+                    sprintf(
+                        'Found circular reference in variable "%s"',
+                        $path[0]
+                    )
+                );
+            }
+            $path[] = $varName;
+            $this->findCircularReferences(
+                $path,
+                $token->value,
+                ...$this->storage[$token->value]
+            );
+        }
     }
 
     /**
@@ -72,7 +149,7 @@ class Storage implements \Iterator
     /**
      * @return void
      */
-    public function rewind()
+    public function rewind(): void
     {
         reset($this->storage);
     }

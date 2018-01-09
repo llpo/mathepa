@@ -50,23 +50,64 @@ class LexerTest extends TestCase
     /**
      * @test
      */
-    public function findClosingBrackets()
+    public function findTokenPairs()
     {
-        $tok = Lexer::findClosingBracket(')', 0);
-        $this->assertSame(0, $tok->position);
-        $this->assertSame(')', $tok->value);
+        // Brackets
 
-        $tok = Lexer::findClosingBracket('2 + 2)', 0);
-        $this->assertSame(5, $tok->position);
+        list($t1, $t2) = Lexer::findTokenPair('(', ')', ')', 0);
+        $this->assertNull($t1);
+        $this->assertSame(0, $t2->position);
+        $this->assertSame(')', $t2->value);
+        $this->assertSame(Token::TYPE_CLOSING_BRAKET, $t2->type);
 
-        $tok = Lexer::findClosingBracket('2 + (2 * 5) - 2)', 0);
-        $this->assertSame(15, $tok->position);
+        list($t1, $t2) = Lexer::findTokenPair('(', ')', '2 + 2)', 0);
+        $this->assertNull($t1);
+        $this->assertSame(5, $t2->position);
+        $this->assertSame(Token::TYPE_CLOSING_BRAKET, $t2->type);
 
-        $tok = Lexer::findClosingBracket('((2 + (2 * (5) - 2) + 9))', 0);
-        $this->assertSame(24, $tok->position);
+        list($t1, $t2) = Lexer::findTokenPair('(', ')', '2 + (2 * 5) - 2)', 0);
+        $this->assertNull($t1);
+        $this->assertSame(15, $t2->position);
 
-        $this->assertSame(null, Lexer::findClosingBracket('(2 + 1', 0));
-        $this->assertSame(null, Lexer::findClosingBracket('7 + 3', 0));
+        list($t1, $t2) = Lexer::findTokenPair('(', ')', '((2 + (2 * (5) - 2) + 9))', 0);
+        $this->assertSame(0, $t1->position);
+        $this->assertSame(Token::TYPE_OPENING_BRAKET, $t1->type);
+        $this->assertSame(24, $t2->position);
+        $this->assertSame(Token::TYPE_CLOSING_BRAKET, $t2->type);
+
+        list($t1, $t2) = Lexer::findTokenPair('(', ')', '(2 + 1', 0);
+        $this->assertSame(0, $t1->position);
+        $this->assertNull($t2);
+
+        $this->assertSame([null, null], Lexer::findTokenPair('(', ')', '7 + 3', 0));
+
+        // Ternary operator
+
+        list($t1, $t2) = Lexer::findTokenPair('?', ':', '1 : 2', 0);
+        $this->assertNull($t1);
+        $this->assertSame(2, $t2->position);
+
+        list($t1, $t2) = Lexer::findTokenPair('?', ':', '(2 > 1 ?) 1 : 2', 7);
+        $this->assertSame(7, $t1->position);
+        $this->assertNull($t2);
+
+        list($t1, $t2) = Lexer::findTokenPair('?', ':', '? (2 : 1)', 0);
+        $this->assertSame(0, $t1->position);
+        $this->assertNull($t2);
+
+        list($t1, $t2) = Lexer::findTokenPair('?', ':', '? : 1', 0);
+        $this->assertSame(0, $t1->position);
+        $this->assertSame(Token::TYPE_TERNARY_OPERATOR_THEN, $t1->type);
+        $this->assertSame(2, $t2->position);
+        $this->assertSame(Token::TYPE_TERNARY_OPERATOR_ELSE, $t2->type);
+
+        list($t1, $t2) = Lexer::findTokenPair('?', ':', '3 % 3 ? 3 : 1', 6);
+        $this->assertSame(6, $t1->position);
+        $this->assertSame(10, $t2->position);
+
+        list($t1, $t2) = Lexer::findTokenPair('?', ':', '? (2 + (10 / 5)) : 0', 0);
+        $this->assertSame(0, $t1->position);
+        $this->assertSame(17, $t2->position);
     }
 
     /**
@@ -118,7 +159,7 @@ class LexerTest extends TestCase
         $this->assertSame(null, Lexer::readFunctionToken('abs 2 + 3)', 0));
         $this->assertSame(null, Lexer::readFunctionToken('0abs(2 + 3)', 0));
 
-        // Right syntax but unrecognized function name
+        // Right syntax, but unrecognized function name
         $this->expectException(InvalidFunctionException::class);
         Lexer::readFunctionToken('zzz(2 + 3)', 0);
     }

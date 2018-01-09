@@ -59,36 +59,14 @@ class ExpressionTest extends TestCase
     /**
      * @test
      */
-    public function evaluateSimpleExpressions()
-    {
-        $m = new Expression();
-
-        $this->assertSame(1, $m->setExpression('2 + - 1')->evaluate());
-        $this->assertSame(2, $m->setExpression('1 + + 1')->evaluate());
-        $this->assertSame(3, $m->setExpression('2 + 1')->evaluate());
-        $this->assertSame(7, $m->setExpression('2 + 1 * 3 + 2')->evaluate());
-        $this->assertSame(11, $m->setExpression('(2 + 1) * 3 + 2')->evaluate());
-        $this->assertSame(15, $m->setExpression('(2 + 1) * (3 + 2)')->evaluate());
-        $this->assertSame(64, $m->setExpression('8 ** 2')->evaluate());
-        $this->assertSame(-32, $m->setExpression('8**2 / -2')->evaluate());
-        $this->assertSame(2, $m->setExpression('5 % 3')->evaluate());
-        $this->assertSame(-2, $m->setExpression('-5 % 3')->evaluate());
-    }
-
-     /**
-      * @test
-      */
     public function evaluateExpressionsWithFunctions()
     {
         $m = new Expression();
 
-        // Calculate radius
         $this->assertSame(
             6.366197723675814,
             $m->setExpression('40 / (2 * pi())')->evaluate()
         );
-
-        // TODO add more
     }
 
     /**
@@ -98,14 +76,33 @@ class ExpressionTest extends TestCase
     {
         $m = new Expression();
 
-        // Calculate radius
         $m->setVariable('pi', pi());
         $this->assertSame(
             6.366197723675814,
             $m->setExpression('40 / (2 * pi)')->evaluate()
         );
+    }
 
-        // TODO add more
+    /**
+     * @test
+     */
+    public function evaluateExpressionsWithTernaryOperators()
+    {
+        $m = new Expression();
+        $m->setVariable('price', 2.40);
+        $m->setVariable('vat', 1.19);
+
+        $discount = '(units > 100 ? (units > 500 ? 0.20 : 0.10) : 0)';
+        $m->setExpression($discount);
+        $this->assertSame(0, $m->setVariable('units', 75)->evaluate());
+        $this->assertSame(0.10, $m->setVariable('units', 125)->evaluate());
+        $this->assertSame(0.20, $m->setVariable('units', 525)->evaluate());
+
+        $m->setVariable('discount', $discount);
+        $m->setExpression('round((price - (price * discount)) * vat,  2) * units');
+        $this->assertSame(214.50, $m->setVariable('units', 75)->evaluate());
+        $this->assertSame(321.25, $m->setVariable('units', 125)->evaluate());
+        $this->assertSame(1197.00, $m->setVariable('units', 525)->evaluate());
     }
 
     /**
@@ -119,32 +116,62 @@ class ExpressionTest extends TestCase
     }
 
     /**
-     * @test
+     *  Data provider
      */
-    public function evaluateThrowsInvalidFunctionException()
+    public function wrongExpressions()
     {
-        $this->expectException(InvalidFunctionException::class);
-        $this->expectExceptionMessage('Unknown function name "eval"');
-        (new Expression())->setExpression('40 / eval("return 2+1;")')->evaluate();
+        // Expression | Expected error message
+        return [
+            ['40 / eval("return 2+1;")', 'Unknown function name "eval"'],
+            ['sin()', 'sin() expects exactly 1 parameter'],
+            ['cos(deg2rad(90, 180))', 'deg2rad() expects exactly 1 parameter'],
+            ['9 > 8 ? 1 :', 'Unexpected token ":": line 1, column 11'],
+            ['+ -2 - 9', 'Unexpected token "+": line 1, column 1'],
+        ];
     }
 
     /**
+     * @dataProvider wrongExpressions
      * @test
      */
-    public function evaluateThrowsExceptionBecauseOfMissingParameter()
+    public function evaluateThrowsInvalidExpressionException($expression, $message)
     {
         $this->expectException(InvalidExpressionException::class);
-        $this->expectExceptionMessage('sin() expects exactly 1 parameter');
-        (new Expression())->setExpression('sin()')->evaluate();
+        $this->expectExceptionMessage($message);
+        (new Expression())->setExpression($expression)->evaluate();
     }
 
     /**
+     *  Data provider
+     */
+    public function rightExpressions()
+    {
+        // Expression | Variables | Expected result
+        return [
+            ['2 + - 1', [], 1],
+            ['1 + + 1', [], 2],
+            ['2 + 1 * 3 + 2', [], 7],
+            ['5 + 4', [], 9],
+            ['(2 + 1) * 3 + 2', [], 11],
+            ['(2 + 1) * (3 + 2)', [], 15],
+            ['8 ** 2', [], 64],
+            ['8**2 / -2', [], -32],
+            ['5 % 3', [], 2],
+            ['-5 % 3', [], -2],
+            ['9 > 8 ? 3 : 4', [], 3],
+        ];
+    }
+
+    /**
+     * @dataProvider rightExpressions
      * @test
      */
-    public function evaluateThrowsExceptionBecauseOfWrongNumberOfParameters()
+    public function evaluateReturnsTheExpectedResult($expression, $variables, $result)
     {
-        $this->expectException(InvalidExpressionException::class);
-        $this->expectExceptionMessage('deg2rad() expects exactly 1 parameter');
-        (new Expression())->setExpression('cos(deg2rad(90, 180))')->evaluate();
+        $m = new Expression($expression);
+        foreach ($variables as $name => $value) {
+            $m->setVariable($name, $value);
+        }
+        $this->assertEquals($result, $m->evaluate());
     }
 }
