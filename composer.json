@@ -2,7 +2,14 @@
     "name": "llpo/mathepa",
     "type": "library",
     "description": "Mathpa is a library to evaluate PHP math expressions",
-    "keywords": ["mathepa", "evaulate", "math expression", "calculate"],
+    "keywords": [
+        "mathepa",
+        "mathematical expression",
+        "math expression",
+        "evaluator",
+        "parser",
+        "calculate"
+    ],
     "homepage": "https://github.com/llpo/mathepa",
     "license": "MIT",
     "authors": [
@@ -36,7 +43,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "0.1-dev"
+            "dev-master": "1.0.0-dev"
         }
     },
     "scripts": {
