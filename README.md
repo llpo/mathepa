@@ -7,11 +7,11 @@ Mathepa is a parser for mathematical expressions in PHP.
 
 I needed some users to be able to enter mathematical formulas through a form
 and save them in a database. Furthermore, I wanted to be able to compute
-those formulas somewhere in the back-end. The problem of that is having to use
-directly a dangerous function as _[eval][1]_.
+those formulas in the back-end. The problem of that is having to use directly
+a dangerous function as _[eval][1]_.
 
 Mathepa acts as a proxy and should be used in both directions, before
-saving data or process input, as validator, and after fetching data, as
+saving data or processing input, as validator, and after fetching data, as
 evaluator instead using directly _[eval][1]_.
 
 [1]: http://php.net/eval
@@ -19,12 +19,13 @@ evaluator instead using directly _[eval][1]_.
 ## Quick feature list
 
 - Express mathematical expression as in PHP
+- Use of ternary operator allowed, only long syntax: (expr1) ? (expr2) : (expr3)
 - Almost all [Math functions](src/Mathepa/Lexer.php) are allowed to use
 - Use of variables to parametrize values
-- Variables can contain expressions as well, but no variables
+- Variables can contain complex expressions as well
 - Function _[eval][1]_ will be called only with valid expressions, and thus
 secure
-- No dependencies required
+- No external dependencies required
 
 ## How it works?
 
@@ -35,10 +36,10 @@ fulfill before an expression is consider as valid:
 - Syntax is valid, i.e. all tokens are identified e.g. "3.1.4" is invalid
 - Grammar is valid, i.e. after a [literal] cannot follow a [variable]
 - Used functions are [white listed](src/Mathepa/Lexer.php)
-- Variables contains a valid expression, but no variables
+- Variables contains a valid expression
 
 Mathepa **doesn't check the number of formal parameters** of a function but
-only the syntax. Some examples below.
+only the syntax. Some examples below:
 
 Will throw an exception because of a missing parameter, syntax is valid so the
 expression will be evaluated with _eval_:
@@ -78,7 +79,7 @@ use \Mathepa\Expression;
 
 $m = new Expression('1 / 2 * gravity * seconds');
 $m->setVariable('gravity', '9.8');
-$m->setVariable('seconds', '3 + 2');
+$m->setVariable('seconds', '2');
 $height = $m->evaluate();
 ```
 
@@ -91,6 +92,17 @@ $m = new Expression();
 $m->setVariable('distance', 40);
 $m->setVariable('degrees', 35);
 $height = $m->setExpression('distance * tan(degrees)')->evaluate();
+```
+
+### Use of ternary operators in expressions
+
+```php
+$m = new Expression('round((price - (price * discount)) * vat,  2) * units');
+$m->setVariable('discount', '(units > 100 ? (units > 500 ? 0.10 : 0.20) : 0)');
+$m->setVariable('price', 20);
+$m->setVariable('units', 125);
+$m->setVariable('vat', 1.19);
+$total = $m->evaluate();
 ```
 
 ## Installation
@@ -114,13 +126,17 @@ docker-compose run test
 Open a shell:
 
 ```bash
-docker-compose run install
-docker-compose run php sh
+docker-compose run shell sh
 ```
 
-Run composer scripts:
+Install development packages:
 
 ```bash
-composer run phpunit
-composer run phpcs
+docker-compose run install
+```
+
+Run some composer scripts:
+
+```bash
+composer test
 ```
