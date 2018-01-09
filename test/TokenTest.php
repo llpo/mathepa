@@ -16,7 +16,7 @@ class TokenTest extends TestCase
     /**
      * @test
      */
-    public function exceptionThrownWhenInvalidTokenTypePassed()
+    public function exceptionThrownWhenInvalidTypePassed()
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage('Unknown type "200"');
@@ -26,7 +26,7 @@ class TokenTest extends TestCase
     /**
      * @test
      */
-    public function exceptionThrownWhenInvalidTokenValuePassed()
+    public function exceptionThrownWhenInvalidValuePassed()
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage('Unexpected empty string as token value');
@@ -36,7 +36,7 @@ class TokenTest extends TestCase
     /**
      * @test
      */
-    public function exceptionThrownWhenInvalidTokenPositionPassed()
+    public function exceptionThrownWhenInvalidPositionPassed()
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage('Wrong position value "-1"');
@@ -46,7 +46,7 @@ class TokenTest extends TestCase
     /**
      * @test
      */
-    public function exceptionThrownWhenInvalidTokenLinePassed()
+    public function exceptionThrownWhenInvalidLinePassed()
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage('Wrong line value "0"');
@@ -56,7 +56,7 @@ class TokenTest extends TestCase
     /**
      * @test
      */
-    public function exceptionThrownWhenInvalidTokenColumnPassed()
+    public function exceptionThrownWhenInvalidColumnPassed()
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage('Wrong column value "-1"');
@@ -68,7 +68,7 @@ class TokenTest extends TestCase
      */
     public function exceptionThrownWhenPropertyDoesNotExist()
     {
-        $this->expectException(\DomainException::class);
+        $this->expectException(\UnexpectedValueException::class);
         (new Token(Token::TYPE_OPENING_BRAKET, '(', 0, 1, 0))->doesNotExist;
     }
 }
