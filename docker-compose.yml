@@ -1,7 +1,7 @@
 version: '3.3'
 
 services:
-    php:
+    shell:
         user: $USER
         image: sandbox-mathepa
         build:
