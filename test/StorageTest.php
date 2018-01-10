@@ -78,7 +78,7 @@ class StorageTest extends TestCase
         $vars = new Storage();
         $this->expectException(InvalidVariableException::class);
         $this->expectExceptionMessage(
-            'Found circular reference in variable "var1"'
+            'Found circular reference for variable "var1"'
         );
         $vars->set(
             'var1',
@@ -110,7 +110,7 @@ class StorageTest extends TestCase
         );
         $this->expectException(InvalidVariableException::class);
         $this->expectExceptionMessage(
-            'Found circular reference in variable "var1"'
+            'Found circular reference for variable "var3"'
         );
         $vars->set(
             'var3',

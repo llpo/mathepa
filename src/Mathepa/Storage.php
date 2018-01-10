@@ -46,14 +46,13 @@ class Storage implements \Iterator
         }
 
         $this->storage[$name] = $tokens;
-        foreach ($this->storage as $varName => $varTokens) {
-            try {
-                $path = [];
-                $this->findCircularReferences($path, $varName, ...$varTokens);
-            } catch (InvalidVariableException $exception) {
-                $this->del($name);
-                throw $exception;
-            }
+
+        try {
+            $path = [];
+            $this->findCircularReferences($path, $name, ...$tokens);
+        } catch (InvalidVariableException $exception) {
+            $this->del($name);
+            throw $exception;
         }
 
         return $this;
@@ -123,8 +122,8 @@ class Storage implements \Iterator
             if (in_array($varName, $path, true)) {
                 throw new InvalidVariableException(
                     sprintf(
-                        'Found circular reference in variable "%s"',
-                        $path[0]
+                        'Found circular reference for variable "%s"',
+                        $varName
                     )
                 );
             }
