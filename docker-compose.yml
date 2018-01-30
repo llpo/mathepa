@@ -4,6 +4,7 @@ services:
     shell:
         user: $USER
         image: sandbox-mathepa
+        command: /bin/sh
         build:
             context: .
             args:
