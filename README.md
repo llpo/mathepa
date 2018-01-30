@@ -1,62 +1,62 @@
 
 # Mathepa
 
-Mathepa is a parser for mathematical expressions in PHP.
+Mathepa is a parser for mathematical expressions in PHP syntax.
 
 ## Why?
 
-I needed some users to be able to enter mathematical formulas through a form
-and save them in a database. Furthermore, I wanted to be able to compute
-those formulas in the back-end. The problem of that is having to use directly
-a dangerous function as _[eval][1]_.
+The idea arises from the need to save mathematical formulas into a database.
+Furthermore, it was required to compute those formulas in the back-end, and to
+achieve that, the usage of _[eval][1]_ is necessary. Mathepa prevents the
+direct usage of _[eval][1]_ acting as a proxy.
 
-Mathepa acts as a proxy and should be used in both directions, before
-saving data or processing input, as validator, and after fetching data, as
-evaluator instead using directly _[eval][1]_.
-
-[1]: http://php.net/eval
+Mathepa should be used in both directions, before saving data or processing any
+input, as validator, and after fetching data as evaluator.
 
 ## Quick feature list
 
-- Express mathematical expression as in PHP
-- Use of ternary operator allowed, only long syntax: (expr1) ? (expr2) : (expr3)
-- Almost all [Math functions](src/Mathepa/Lexer.php) are allowed to use
+- Express mathematical expression using PHP syntax
 - Use of variables to parametrize values
-- Variables can contain complex expressions as well
-- Function _[eval][1]_ will be called only with valid expressions, and thus
-secure
+- Use of ternary operator
+- Almost all [math functions](src/Mathepa/Lexer.php) are white listed
+- Variables can contain complex expressions as well (nesting)
+- _[eval][1]_ function will be called only with valid expressions
 - No external dependencies required
+
+[1]: http://php.net/eval
 
 ## How it works?
 
-Mathepa uses the PHP function _[eval][1]_. An expression will be evaluated
-with _eval_ only when syntax and grammar are valid. Here some requirement to
-fulfill before an expression is consider as valid:
+As already mentioned, Mathepa uses the _eval_ PHP function to evaluate
+previously validated and, thus, secure expressions, so that _eval_ only will
+evaluate an expression when syntax and grammar are valid. Here a list of
+requirement to fulfill before an expression is considered as valid:
 
-- Syntax is valid, i.e. all tokens are identified e.g. "3.1.4" is invalid
-- Grammar is valid, i.e. after a [literal] cannot follow a [variable]
-- Used functions are [white listed](src/Mathepa/Lexer.php)
-- Variables contains a valid expression
+- Syntax is valid, i.e., all tokens are identified, e.g., "3.1.4" is invalid
+- Grammar is valid, i.e., after a [literal] cannot follow a [variable]
+- Used functions have to be [white listed](src/Mathepa/Lexer.php)
+- Variables muss contain a valid expression as well
+- No circular references in variables found
 
 Mathepa **doesn't check the number of formal parameters** of a function but
 only the syntax. Some examples below:
 
-Will throw an exception because of a missing parameter, syntax is valid so the
-expression will be evaluated with _eval_:
+Following example will throw an exception because of a missing parameter,
+syntax is valid, so _eval_ is called:
 
 ```php
 (new Expression('cos()'))->evaluate();
 ```
 
-Will throw an exception because of unexpected parameter, syntax is fine,
-so _eval_ is called:
+This example Will throw an exception because of an unexpected parameter, syntax
+is valid, in this case _eval_ is called:
 
 ```php
 (new Expression('cos(30, 60)'))->evaluate();
 ```
 
-Those examples will throw an exception because of syntax error, in those
-cases _eval_ is not called:
+Following examples will throw an exception because of a syntax error, in those
+cases _eval_ is never called:
 
 ```php
 (new Expression('cos(30,)'))->evaluate();
@@ -64,15 +64,15 @@ cases _eval_ is not called:
 (new Expression('abs(-43.24), 2'))->evaluate();
 ```
 
-See [units tests for some examples](test/)
+See [units tests for more examples](test/)
 
-Notice that only Math function with numeric values are [white listed][lexer].
+Notice that only math function with numeric parameters are [white listed][lexer].
 
 [lexer]: src/Mathepa/Lexer.php
 
 ## Examples
 
-### Use of variables
+### Usage of variables
 
 ```php
 use \Mathepa\Expression;
@@ -83,7 +83,7 @@ $m->setVariable('seconds', '2');
 $height = $m->evaluate();
 ```
 
-### Use of functions
+### Usage of functions
 
 ```php
 use \Mathepa\Expression;
@@ -94,7 +94,9 @@ $m->setVariable('degrees', 35);
 $height = $m->setExpression('distance * tan(degrees)')->evaluate();
 ```
 
-### Use of ternary operators in expressions
+### Usage of ternary operator in expressions
+
+Only long syntax supported, i.e., (expr1) ? (expr2) : (expr3)
 
 ```php
 $m = new Expression('round((price - (price * discount)) * vat,  2) * units');
@@ -106,8 +108,6 @@ $total = $m->evaluate();
 ```
 
 ## Installation
-
-Install using composer:
 
 ```bash
 composer require llpo/mathepa
@@ -126,7 +126,7 @@ docker-compose run test
 Open a shell:
 
 ```bash
-docker-compose run shell sh
+docker-compose run shell
 ```
 
 Install development packages:
