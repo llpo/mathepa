@@ -6,9 +6,9 @@ Mathepa is a parser for mathematical expressions in PHP syntax.
 ## Why?
 
 The idea arises from the need to save mathematical formulas into a database.
-Furthermore, it was required to compute those formulas in the back-end, and to
-achieve that, the usage of _[eval][1]_ is necessary. Mathepa prevents the
-direct usage of _[eval][1]_ acting as a proxy.
+Furthermore, it was required to compute those formulas in the back-end, to
+do that, the use of _[eval][1]_ is necessary. Mathepa acts as a proxy
+preventing a direct use of _[eval][1]_.
 
 Mathepa should be used in both directions, before saving data or processing any
 input, as validator, and after fetching data as evaluator.
