@@ -2,9 +2,14 @@
 <phpunit
     bootstrap="vendor/autoload.php"
     colors="true"
+    verbose="true"
+    beStrictAboutTodoAnnotatedTests="true"
+    beStrictAboutCoversAnnotation="true"
+    beStrictAboutOutputDuringTests="true"
+    beStrictAboutTestsThatDoNotTestAnything="true"
+    processIsolation="false"
     stopOnError="true"
     stopOnFailure="false"
-    testdox="true"
 >
     <testsuites>
         <testsuite name="Mathepa Test Suite">
