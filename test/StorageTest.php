@@ -73,58 +73,6 @@ class StorageTest extends TestCase
     /**
      * @test
      */
-    public function variablesWithCircularReferencesThrowsAnException()
-    {
-        $vars = new Storage();
-        $this->expectException(InvalidVariableException::class);
-        $this->expectExceptionMessage(
-            'Found circular reference for variable "var1"'
-        );
-        $vars->set(
-            'var1',
-            ...[
-                new Token(Token::TYPE_VARIABLE, 'var2', 0, 1, 0),
-                new Token(Token::TYPE_ARITHMETIC_OPERATOR, '+', 4, 1, 5),
-                new Token(Token::TYPE_VARIABLE, 'var1', 5, 1, 9)
-            ]
-        );
-    }
-
-    /**
-     * @test
-     */
-    public function variablesWithIndirectCircularReferencesThrowsAnException()
-    {
-        $vars = new Storage();
-        $vars->set(
-            'var1',
-            ...[
-                new Token(Token::TYPE_VARIABLE, 'var2', 0, 1, 0),
-                new Token(Token::TYPE_ARITHMETIC_OPERATOR, '+', 4, 1, 5),
-                new Token(Token::TYPE_VARIABLE, 'var3', 5, 1, 9)
-            ]
-        );
-        $vars->set(
-            'var2',
-            ...[new Token(Token::TYPE_LITERAL, '2', 0, 1, 0)]
-        );
-        $this->expectException(InvalidVariableException::class);
-        $this->expectExceptionMessage(
-            'Found circular reference for variable "var3"'
-        );
-        $vars->set(
-            'var3',
-            ...[
-                new Token(Token::TYPE_VARIABLE, 'var2', 0, 1, 0),
-                new Token(Token::TYPE_ARITHMETIC_OPERATOR, '+', 4, 1, 5),
-                new Token(Token::TYPE_VARIABLE, 'var1', 5, 1, 9)
-            ]
-        );
-    }
-
-    /**
-     * @test
-     */
     public function storageObjectsAreIterable()
     {
         $vars = (new Storage())
@@ -138,5 +86,32 @@ class StorageTest extends TestCase
             $this->assertEquals($x, $value[0]->value);
         }
         $this->assertEquals($x, 3);
+    }
+
+
+    /**
+     * @test
+     */
+    public function outputTokensShouldCloned()
+    {
+        $token1 = new Token(Token::TYPE_LITERAL, '1', 0, 1, 0);
+        $token2 = new Token(Token::TYPE_LITERAL, '2', 0, 1, 0);
+
+        $vars = (new Storage())
+            ->set('var1', $token1)
+            ->set('var2', $token2);
+
+        $this->assertEquals($vars->get('var1')[0], $token1);
+        $this->assertNotSame($vars->get('var1')[0], $token1);
+
+        $variables = $vars->toArray();
+        $this->assertEquals(
+            ['var1' => [$token1], 'var2' => [$token2]],
+            $variables
+        );
+
+        $this->assertEquals($variables['var2'], [$token2]);
+        $this->assertNotEquals($token1, $token2);
+        $this->assertNotSame($variables['var2'], [$token2]);
     }
 }

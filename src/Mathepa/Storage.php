@@ -47,14 +47,6 @@ class Storage implements \Iterator
 
         $this->storage[$name] = $tokens;
 
-        try {
-            $path = [];
-            $this->findCircularReferences($path, $name, ...$tokens);
-        } catch (InvalidVariableException $exception) {
-            $this->del($name);
-            throw $exception;
-        }
-
         return $this;
     }
 
@@ -71,69 +63,30 @@ class Storage implements \Iterator
             );
         }
 
-        return $this->storage[$name];
+        return $this->clone($name);
     }
 
     /**
      * Delete / unset variable
      *
      * @param string $name
-     * @throws \Mathepa\Exception\InvalidVariableException
      * @return self
      */
     public function del(string $name): self
     {
-        $this->get($name);
-        // If no exception thrown, var with "$name" exists
         unset($this->storage[$name]);
 
         return $this;
     }
 
     /**
-     * @param string[] &$path Path where to save traversed references
-     * @param string $varName
-     * @param \Mathepa\Token[] $varTokens
-     * @throws \Mathepa\Exception\InvalidVariableException
-     * @return void
+     * Clear storage
+     *
+     * @return self
      */
-    protected function findCircularReferences(
-        array &$path,
-        string $varName,
-        Token ...$varTokens
-    ): void
+    public function clear(): self
     {
-        $vars = [];
-        foreach ($varTokens as $token) {
-            if ($token->type !== Token::TYPE_VARIABLE) {
-                continue;
-            }
-            if (!isset($this->storage[$token->value])) {
-                continue;
-            }
-            if (in_array($token->value, $vars, true)) {
-                // Variable could be used more than once in the current
-                // expression, so that:
-                // - There is no need to double check (performance)
-                // - Prevent duplicates in $path that fakes circular references
-                continue;
-            }
-            $vars[] = $token->value;
-            if (in_array($varName, $path, true)) {
-                throw new InvalidVariableException(
-                    sprintf(
-                        'Found circular reference for variable "%s"',
-                        $varName
-                    )
-                );
-            }
-            $path[] = $varName;
-            $this->findCircularReferences(
-                $path,
-                $token->value,
-                ...$this->storage[$token->value]
-            );
-        }
+        $this->storage = [];
     }
 
     /**
@@ -185,5 +138,33 @@ class Storage implements \Iterator
         $key = key($this->storage);
 
         return ($key !== null && $key !== false);
+    }
+
+    /**
+     * @return array Return associative array with cloned tokens
+     */
+    public function toArray(): array
+    {
+        $variables = [];
+        foreach ($this->storage as $name => $tokens) {
+            $variables[$name] = $this->clone($name);
+        }
+
+        return $variables;
+    }
+
+    /**
+     * @param string $name Variable name
+     * @return Token[]
+     */
+    private function clone(string $name)
+    {
+        $tokens = [];
+
+        foreach ($this->storage[$name] as $token) {
+            $tokens[] = clone $token;
+        }
+
+        return $tokens;
     }
 }
