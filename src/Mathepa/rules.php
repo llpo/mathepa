@@ -10,6 +10,7 @@ namespace Mathepa;
  */
 const FIRST_TOKEN_RULES = [
     Token::TYPE_LITERAL,
+    Token::TYPE_SIGNED_LITERAL,
     Token::TYPE_OPENING_BRAKET,
     Token::TYPE_FUNCTION,
     Token::TYPE_VARIABLE,
@@ -23,6 +24,7 @@ const FIRST_TOKEN_RULES = [
  */
 const LAST_TOKEN_RULES = [
     Token::TYPE_LITERAL,
+    Token::TYPE_SIGNED_LITERAL,
     Token::TYPE_CLOSING_BRAKET,
     Token::TYPE_CLOSING_BRAKET_FUNCTION,
     Token::TYPE_VARIABLE,
@@ -35,11 +37,11 @@ const LAST_TOKEN_RULES = [
  *
  * The array has following schema:
  * <key>: Token type of the previous token
- * <values>:  Token types that are allowed to follow the previous token (<key>)
+ * <values>: Token types that are allowed to follow the previous token (<key>)
  *
  * Notice that some complex cases must be elsewhere expressed and checked.
- * This arrays is not intended to cover such complex cases, difficult to
- * express in a  declarative way:
+ * This arrays is not intended to cover such complex cases, they too
+ * difficult to express in a declarative way:
  * E.g. TYPE_LITERAL + TYPE_COMMA_FUNCTION is allowed only inside function
  * brackets. Such case is checked in {@see \Mathepa\Parser::checkGrammar}
  *
@@ -47,6 +49,18 @@ const LAST_TOKEN_RULES = [
  */
 const BOUND_TOKEN_RULES = [
     Token::TYPE_LITERAL => [
+        Token::TYPE_SIGNED_LITERAL,
+        Token::TYPE_CLOSING_BRAKET,
+        Token::TYPE_ARITHMETIC_OPERATOR,
+        Token::TYPE_COMPARISON_OPERATOR,
+        Token::TYPE_CLOSING_BRAKET_FUNCTION,
+        Token::TYPE_COMMA_FUNCTION,
+        Token::TYPE_TERNARY_OPERATOR_THEN,
+        Token::TYPE_TERNARY_OPERATOR_ELSE,
+    ],
+    Token::TYPE_SIGNED_LITERAL => [
+        Token::TYPE_LITERAL,
+        Token::TYPE_SIGNED_LITERAL,
         Token::TYPE_CLOSING_BRAKET,
         Token::TYPE_ARITHMETIC_OPERATOR,
         Token::TYPE_COMPARISON_OPERATOR,
@@ -57,11 +71,13 @@ const BOUND_TOKEN_RULES = [
     ],
     Token::TYPE_OPENING_BRAKET => [
         Token::TYPE_LITERAL,
+        Token::TYPE_SIGNED_LITERAL,
         Token::TYPE_OPENING_BRAKET,
         Token::TYPE_FUNCTION,
         Token::TYPE_VARIABLE,
     ],
     Token::TYPE_CLOSING_BRAKET => [
+        Token::TYPE_SIGNED_LITERAL,
         Token::TYPE_CLOSING_BRAKET_FUNCTION,
         Token::TYPE_CLOSING_BRAKET,
         Token::TYPE_ARITHMETIC_OPERATOR,
@@ -71,12 +87,14 @@ const BOUND_TOKEN_RULES = [
     ],
     Token::TYPE_ARITHMETIC_OPERATOR => [
         Token::TYPE_LITERAL,
+        Token::TYPE_SIGNED_LITERAL,
         Token::TYPE_OPENING_BRAKET,
         Token::TYPE_FUNCTION,
         Token::TYPE_VARIABLE,
     ],
     Token::TYPE_COMPARISON_OPERATOR => [
         Token::TYPE_LITERAL,
+        Token::TYPE_SIGNED_LITERAL,
         Token::TYPE_OPENING_BRAKET,
         Token::TYPE_FUNCTION,
         Token::TYPE_VARIABLE,
@@ -86,12 +104,14 @@ const BOUND_TOKEN_RULES = [
     ],
     Token::TYPE_OPENING_BRAKET_FUNCTION => [
         Token::TYPE_LITERAL,
+        Token::TYPE_SIGNED_LITERAL,
         Token::TYPE_OPENING_BRAKET,
         Token::TYPE_FUNCTION,
         Token::TYPE_CLOSING_BRAKET_FUNCTION,
         Token::TYPE_VARIABLE,
     ],
     Token::TYPE_CLOSING_BRAKET_FUNCTION => [
+        Token::TYPE_SIGNED_LITERAL,
         Token::TYPE_CLOSING_BRAKET_FUNCTION,
         Token::TYPE_CLOSING_BRAKET,
         Token::TYPE_ARITHMETIC_OPERATOR,
@@ -101,10 +121,12 @@ const BOUND_TOKEN_RULES = [
     ],
     Token::TYPE_COMMA_FUNCTION => [
         Token::TYPE_LITERAL,
+        Token::TYPE_SIGNED_LITERAL,
         Token::TYPE_FUNCTION,
         Token::TYPE_VARIABLE,
     ],
     Token::TYPE_VARIABLE => [
+        Token::TYPE_SIGNED_LITERAL,
         Token::TYPE_ARITHMETIC_OPERATOR,
         Token::TYPE_COMPARISON_OPERATOR,
         Token::TYPE_CLOSING_BRAKET,
@@ -118,11 +140,13 @@ const BOUND_TOKEN_RULES = [
         Token::TYPE_FUNCTION,
         Token::TYPE_VARIABLE,
         Token::TYPE_LITERAL,
+        Token::TYPE_SIGNED_LITERAL,
     ],
     Token::TYPE_TERNARY_OPERATOR_ELSE => [
         Token::TYPE_OPENING_BRAKET,
         Token::TYPE_FUNCTION,
         Token::TYPE_VARIABLE,
         Token::TYPE_LITERAL,
+        Token::TYPE_SIGNED_LITERAL,
     ],
 ];

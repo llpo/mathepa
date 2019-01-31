@@ -108,6 +108,35 @@ class ExpressionTest extends TestCase
     /**
      * @test
      */
+    public function evaluateNestedTernaryWithVariables()
+    {
+        $m = new Expression('
+            units > limit1
+            ? (units > limit3 ? v3 : v2)
+            : v1
+        ');
+        $m->setVariable('limit1', 10);
+        $m->setVariable('v1', 1);
+        $m->setVariable('limit2', 20);
+        $m->setVariable('v2', 2);
+        $m->setVariable('limit3', 30);
+        $m->setVariable('v3', 3);
+
+        $this->assertSame(1, $m->setVariable('units', 5)->evaluate());
+        $this->assertSame(2, $m->setVariable('units', 25)->evaluate());
+        $this->assertSame(3, $m->setVariable('units', 35)->evaluate());
+        $this->assertSame(3, $m->setVariable('units', 45)->evaluate());
+
+        $m = new Expression(
+            '(units >= 10 ? (units >= 20 ? (units >= 30 ?  6 : 4) : 2) : 0)'
+        );
+        $this->assertSame(0, $m->setVariable('units', 2)->evaluate());
+        $this->assertSame(4, $m->setVariable('units', 20)->evaluate());
+    }
+
+    /**
+     * @test
+     */
     public function evaluateThrowsInvalidVariableException()
     {
         $this->expectException(InvalidVariableException::class);
@@ -125,8 +154,7 @@ class ExpressionTest extends TestCase
             ['40 / eval("return 2+1;")', 'Unknown function name "eval"'],
             ['sin()', 'sin() expects exactly 1 parameter'],
             ['cos(deg2rad(90, 180))', 'deg2rad() expects exactly 1 parameter'],
-            ['9 > 8 ? 1 :', 'Unexpected token ":": line 1, column 11'],
-            ['+ -2 - 9', 'Unexpected token "+": line 1, column 1'],
+            ['9 > 8 ? 1 :', 'Unexpected token ":" in line 1, column 11'],
         ];
     }
 
@@ -134,10 +162,11 @@ class ExpressionTest extends TestCase
      * @dataProvider wrongExpressions
      * @test
      */
-    public function evaluateThrowsInvalidExpressionException($expression, $message)
+    public function testExceptionWithWrongExpressons($expression, $message)
     {
         $this->expectException(InvalidExpressionException::class);
         $this->expectExceptionMessage($message);
+
         (new Expression())->setExpression($expression)->evaluate();
     }
 
@@ -159,6 +188,8 @@ class ExpressionTest extends TestCase
             ['5 % 3', [], 2],
             ['-5 % 3', [], -2],
             ['9 > 8 ? 3 : 4', [], 3],
+            ['+ -2 - 9', [], -11],
+            ['var + ( var >= 10  ? -2 : -3 )', ['var' => 12], 10],
         ];
     }
 
@@ -166,7 +197,7 @@ class ExpressionTest extends TestCase
      * @dataProvider rightExpressions
      * @test
      */
-    public function evaluateReturnsTheExpectedResult($expression, $variables, $result)
+    public function testExpectedResult($expression, $variables, $result)
     {
         $m = new Expression($expression);
         foreach ($variables as $name => $value) {

@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 // Uses
 use Mathepa\Lexer;
 use Mathepa\Parser;
+use Mathepa\Storage;
 
 // Exceptions
 use Mathepa\Exception\SyntaxErrorException;
@@ -26,7 +27,7 @@ class ParserTest extends TestCase
         $tokens = Lexer::tokenize('3 2');
         $errors = Parser::checkGrammar(...$tokens);
         $this->assertEquals(
-            'Unexpected token "2": line 1, column 3',
+            'Unexpected token "2" in line 1, column 3',
             $errors[0]
         );
     }
@@ -40,7 +41,7 @@ class ParserTest extends TestCase
         $tokens = Lexer::tokenize('3 pi()');
         $errors = Parser::checkGrammar(...$tokens);
         $this->assertEquals(
-            'Unexpected token "pi": line 1, column 3',
+            'Unexpected token "pi" in line 1, column 3',
             $errors[0]
         );
     }
@@ -54,7 +55,7 @@ class ParserTest extends TestCase
         $tokens = Lexer::tokenize('var 3');
         $errors = Parser::checkGrammar(...$tokens);
         $this->assertEquals(
-            'Unexpected token "3": line 1, column 5',
+            'Unexpected token "3" in line 1, column 5',
             $errors[0]
         );
     }
@@ -68,7 +69,7 @@ class ParserTest extends TestCase
         $tokens = Lexer::tokenize('var1 var2');
         $errors = Parser::checkGrammar(...$tokens);
         $this->assertEquals(
-            'Unexpected token "var2": line 1, column 6',
+            'Unexpected token "var2" in line 1, column 6',
             $errors[0]
         );
     }
@@ -82,7 +83,7 @@ class ParserTest extends TestCase
         $tokens = Lexer::tokenize(', =>');
         $errors = Parser::checkGrammar(...$tokens);
         $this->assertEquals(
-            'Unexpected token ",": line 1, column 1',
+            'Unexpected token "," in line 1, column 1',
             $errors[0]
         );
     }
@@ -96,7 +97,7 @@ class ParserTest extends TestCase
         $tokens = Lexer::tokenize('pi() var1');
         $errors = Parser::checkGrammar(...$tokens);
         $this->assertEquals(
-            'Unexpected token "var1": line 1, column 6',
+            'Unexpected token "var1" in line 1, column 6',
             $errors[0]
         );
     }
@@ -110,7 +111,7 @@ class ParserTest extends TestCase
         $tokens = Lexer::tokenize('3, var1');
         $errors = Parser::checkGrammar(...$tokens);
         $this->assertEquals(
-            'Unexpected token ",": line 1, column 2. ' .
+            'Unexpected token "," in line 1, column 2. ' .
                 'This token only allowed inside function brackets.',
             $errors[0]
         );
@@ -130,7 +131,7 @@ class ParserTest extends TestCase
         );
         $errors = Parser::checkGrammar(...$tokens);
         $this->assertEquals(
-            'Unexpected token "2": line 3, column 27',
+            'Unexpected token "2" in line 3, column 27',
             $errors[0]
         );
     }
@@ -144,7 +145,7 @@ class ParserTest extends TestCase
         $tokens = Lexer::tokenize('pow(2, 8,) + 128');
         $errors = Parser::checkGrammar(...$tokens);
         $this->assertEquals(
-            'Unexpected token ")": line 1, column 10',
+            'Unexpected token ")" in line 1, column 10',
             $errors[0]
         );
     }
@@ -158,5 +159,58 @@ class ParserTest extends TestCase
         $tokens = Lexer::tokenize('pow(2, 8) + 128');
         $errors = Parser::checkGrammar(...$tokens);
         $this->assertEmpty($errors);
+    }
+
+    /**
+     * @test
+     */
+    public function circularReferenceThrowsAnException()
+    {
+        $variables = new Storage();
+        $variables->set('var1', ...Lexer::tokenize('var1 + var2'));
+
+        $expression = Lexer::tokenize('var1');
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageRegExp(
+            '/circular reference/'
+        );
+
+        Parser::parse($variables->toArray(), ...$expression);
+    }
+
+    /**
+     * @test
+     */
+    public function testMaximuNestingReferences()
+    {
+        $variables = new Storage();
+        $variables->set('var1', ...Lexer::tokenize('var2'))
+            ->set('var2', ...Lexer::tokenize('var3'))
+            ->set('var3', ...Lexer::tokenize('var4'))
+            ->set('var4', ...Lexer::tokenize('var5'))
+            ->set('var5', ...Lexer::tokenize('var6'))
+            ->set('var6', ...Lexer::tokenize('var7'))
+            ->set('var7', ...Lexer::tokenize('1'));
+
+        $expression = Lexer::tokenize('var1');
+
+        $result = Parser::parse($variables->toArray(), ...$expression);
+        $this->assertEquals("1", $result);
+
+        $variables->del('var7');
+        for ($x = 7; $x <= Parser::MAX_RECURSIVITY; $x++) {
+            $next = $x + 1;
+            $variables->set("var$x", ...Lexer::tokenize("var$next"));
+        }
+        // Exeed Parser::MAX_RECURSIVITY + 1
+        $variables->set("var$next", ...Lexer::tokenize("1"));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageRegExp(
+            '/circular reference/'
+        );
+
+        Parser::parse($variables->toArray(), ...$expression);
     }
 }

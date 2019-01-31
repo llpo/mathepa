@@ -8,26 +8,30 @@ namespace Mathepa;
 class Token
 {
     /**
-     * Types of tokens
+     * Types of tokens, check tokenize function for more details.
+     * @see \Mathepa\Lexer::tokenize()
+     *
      */
-    const TYPE_LITERAL                  = 'literal';
-    const TYPE_CLOSING_BRAKET           = 'closing_bracket';
-    const TYPE_OPENING_BRAKET           = 'opening_bracket';
-    const TYPE_ARITHMETIC_OPERATOR      = 'arithmetic_operator';
-    const TYPE_COMPARISON_OPERATOR      = 'comparison_operator';
-    const TYPE_FUNCTION                 = 'function';
-    const TYPE_OPENING_BRAKET_FUNCTION  = 'opening_bracket_function';
-    const TYPE_CLOSING_BRAKET_FUNCTION  = 'closing_bracket_function';
-    const TYPE_COMMA_FUNCTION           = 'comma_function';
-    const TYPE_VARIABLE                 = 'variable';
-    const TYPE_TERNARY_OPERATOR_THEN  = 'ternary_operator_then';
-    const TYPE_TERNARY_OPERATOR_ELSE    = 'ternary_operator_else';
+    const TYPE_LITERAL                  = 'literal'; // Number
+    const TYPE_SIGNED_LITERAL           = 'signed_literal'; // Number
+    const TYPE_CLOSING_BRAKET           = 'closing_bracket'; // )
+    const TYPE_OPENING_BRAKET           = 'opening_bracket'; // (
+    const TYPE_ARITHMETIC_OPERATOR      = 'arithmetic_operator'; // * + ...
+    const TYPE_COMPARISON_OPERATOR      = 'comparison_operator'; // = > ...
+    const TYPE_FUNCTION                 = 'function'; // function's name
+    const TYPE_OPENING_BRAKET_FUNCTION  = 'opening_bracket_function'; // (
+    const TYPE_CLOSING_BRAKET_FUNCTION  = 'closing_bracket_function'; // )
+    const TYPE_COMMA_FUNCTION           = 'comma_function'; // comma inside parameter's func(x,y)
+    const TYPE_VARIABLE                 = 'variable'; // ASCI name, e.g. var1
+    const TYPE_TERNARY_OPERATOR_THEN    = 'ternary_operator_then'; // ?
+    const TYPE_TERNARY_OPERATOR_ELSE    = 'ternary_operator_else'; // :
 
     /**
      * @var array
      */
     const TYPES = [
         self::TYPE_LITERAL,
+        self::TYPE_SIGNED_LITERAL,
         self::TYPE_OPENING_BRAKET,
         self::TYPE_CLOSING_BRAKET,
         self::TYPE_ARITHMETIC_OPERATOR,

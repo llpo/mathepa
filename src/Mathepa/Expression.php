@@ -43,15 +43,7 @@ class Expression
      */
     public function evaluate()
     {
-        $variables = [];
-
-        // Only process variables used by the expression
-        foreach ($this->expression as $token) {
-            if ($token->type === Token::TYPE_VARIABLE) {
-                $variables[$token->value] = $this->variables->get($token->value);
-            }
-        }
-
+        $variables = $this->variables->toArray();
         $expression = Parser::parse($variables, ...$this->expression);
 
         if ($expression === null) {

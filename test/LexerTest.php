@@ -50,7 +50,7 @@ class LexerTest extends TestCase
     /**
      * @test
      */
-    public function findTokenPairs()
+    public function findTokenPairsBrackets()
     {
         // Brackets
 
@@ -80,7 +80,13 @@ class LexerTest extends TestCase
         $this->assertNull($t2);
 
         $this->assertSame([null, null], Lexer::findTokenPair('(', ')', '7 + 3', 0));
+    }
 
+    /**
+     * @test
+     */
+    public function findTokenPairsTernaryOperator()
+    {
         // Ternary operator
 
         list($t1, $t2) = Lexer::findTokenPair('?', ':', '1 : 2', 0);
@@ -105,9 +111,15 @@ class LexerTest extends TestCase
         $this->assertSame(6, $t1->position);
         $this->assertSame(10, $t2->position);
 
-        list($t1, $t2) = Lexer::findTokenPair('?', ':', '? (2 + (10 / 5)) : 0', 0);
+        $expression = '? (2 + (10 / 5)) : 0';
+        list($t1, $t2) = Lexer::findTokenPair('?', ':', $expression, 0);
         $this->assertSame(0, $t1->position);
         $this->assertSame(17, $t2->position);
+
+        $expression = '? (u > 20 ? (u > 30 ? 3 : 2)) : 1';
+        list($t1, $t2) = Lexer::findTokenPair('?', ':', $expression, 0);
+        $this->assertSame(0, $t1->position);
+        $this->assertSame(30, $t2->position);
     }
 
     /**
@@ -192,49 +204,47 @@ class LexerTest extends TestCase
     public function tokenizeExpressions()
     {
         $this->assertCount(2, Lexer::tokenize('4.21 711'));
-        $this->assertCount(3, Lexer::tokenize('2 +1'));
+        $this->assertCount(2, Lexer::tokenize('2 +1'));
         $this->assertCount(3, Lexer::tokenize('8**2'));
         $this->assertCount(3, Lexer::tokenize('8 ** 2'));
         $this->assertCount(3, Lexer::tokenize('5 %3'));
         $this->assertCount(3, Lexer::tokenize('-5 % 3'));
-        $this->assertCount(7, Lexer::tokenize('2 + 1 * 3 + 2'));
-        $this->assertCount(9, Lexer::tokenize('(2+1) *3 + 2'));
-        $this->assertCount(11, Lexer::tokenize('(4 + 1) * (3 + 2)'));
-        $this->assertCount(11, Lexer::tokenize('(2+1 ) * (3+2)'));
+        $this->assertCount(5, Lexer::tokenize('2 + 1 * 3 + 2'));
+        $this->assertCount(7, Lexer::tokenize('(2+1) *3 + 2'));
+        $this->assertCount(9, Lexer::tokenize('(4 + 1) * (3 + 2)'));
+        $this->assertCount(9, Lexer::tokenize('(2+1 ) * (3+2)'));
 
         // --
 
-        $tokens = Lexer::tokenize('-19.88 +76E+30');
-        $this->assertCount(3, $tokens);
+        $tokens = Lexer::tokenize('-19.88 +76E+30 * 2');
+        $this->assertCount(4, $tokens);
 
-        $this->assertSame(Token::TYPE_LITERAL, $tokens[0]->type);
+        $this->assertSame(Token::TYPE_SIGNED_LITERAL, $tokens[0]->type);
         $this->assertSame('-19.88', $tokens[0]->value);
 
-        $this->assertSame(Token::TYPE_ARITHMETIC_OPERATOR, $tokens[1]->type);
-        $this->assertSame('+', $tokens[1]->value);
+        $this->assertSame(Token::TYPE_SIGNED_LITERAL, $tokens[1]->type);
+        $this->assertSame('+76E+30', $tokens[1]->value);
 
-        $this->assertSame(Token::TYPE_LITERAL, $tokens[2]->type);
-        $this->assertSame('76E+30', $tokens[2]->value);
+        $this->assertSame(Token::TYPE_ARITHMETIC_OPERATOR, $tokens[2]->type);
+        $this->assertSame('*', $tokens[2]->value);
+
+        $this->assertSame(Token::TYPE_LITERAL, $tokens[3]->type);
+        $this->assertSame('2', $tokens[3]->value);
 
         // --
 
         $tokens = Lexer::tokenize('-12.33 +28+53');
-        $this->assertCount(5, $tokens);
+        $this->assertCount(3, $tokens);
 
-        $this->assertSame(Token::TYPE_LITERAL, $tokens[0]->type);
+        $this->assertSame(Token::TYPE_SIGNED_LITERAL, $tokens[0]->type);
         $this->assertSame('-12.33', $tokens[0]->value);
 
-        $this->assertSame(Token::TYPE_ARITHMETIC_OPERATOR, $tokens[1]->type);
-        $this->assertSame('+', $tokens[1]->value);
+        $this->assertSame(Token::TYPE_SIGNED_LITERAL, $tokens[1]->type);
+        $this->assertSame('+28', $tokens[1]->value);
 
-        $this->assertSame(Token::TYPE_LITERAL, $tokens[2]->type);
-        $this->assertSame('28', $tokens[2]->value);
+        $this->assertSame(Token::TYPE_SIGNED_LITERAL, $tokens[2]->type);
+        $this->assertSame('+53', $tokens[2]->value);
 
-        $this->assertSame(Token::TYPE_ARITHMETIC_OPERATOR, $tokens[3]->type);
-        $this->assertSame('+', $tokens[3]->value);
-
-        $this->assertSame(Token::TYPE_LITERAL, $tokens[4]->type);
-        $this->assertSame('53', $tokens[4]->value);
 
         // --
 
@@ -247,7 +257,7 @@ class LexerTest extends TestCase
         $this->assertSame(Token::TYPE_ARITHMETIC_OPERATOR, $tokens[1]->type);
         $this->assertSame('+', $tokens[1]->value);
 
-        $this->assertSame(Token::TYPE_LITERAL, $tokens[2]->type);
+        $this->assertSame(Token::TYPE_SIGNED_LITERAL, $tokens[2]->type);
         $this->assertSame('+2', $tokens[2]->value);
 
         // --
@@ -261,7 +271,7 @@ class LexerTest extends TestCase
         $this->assertSame(Token::TYPE_ARITHMETIC_OPERATOR, $tokens[1]->type);
         $this->assertSame('+', $tokens[1]->value);
 
-        $this->assertSame(Token::TYPE_LITERAL, $tokens[2]->type);
+        $this->assertSame(Token::TYPE_SIGNED_LITERAL, $tokens[2]->type);
         $this->assertSame('+ 3', $tokens[2]->value);
 
         // --
@@ -272,7 +282,7 @@ class LexerTest extends TestCase
         $this->assertSame('2', $tokens[0]->value);
         $this->assertSame(Token::TYPE_ARITHMETIC_OPERATOR, $tokens[1]->type);
         $this->assertSame('+', $tokens[1]->value);
-        $this->assertSame(Token::TYPE_LITERAL, $tokens[2]->type);
+        $this->assertSame(Token::TYPE_SIGNED_LITERAL, $tokens[2]->type);
         $this->assertSame('- 1', $tokens[2]->value);
     }
 
@@ -288,9 +298,18 @@ class LexerTest extends TestCase
     /**
      * @test
      */
-    public function recognizeWrongOperator()
+    public function recognizeWrongOperatorDoublePlus()
     {
         $this->expectException(SyntaxErrorException::class);
         Lexer::tokenize('4++1');
+    }
+
+    /**
+     * @test
+     */
+    public function recognizeWrongOperatorDoubleMinus()
+    {
+        $this->expectException(SyntaxErrorException::class);
+        Lexer::tokenize('2--1');
     }
 }
