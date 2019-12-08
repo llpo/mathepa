@@ -99,7 +99,7 @@ class Parser
     }
 
     /**
-     * Checks the grammar of a mathematical expression.
+     * Checks grammar of a mathematical expression.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
@@ -120,10 +120,10 @@ class Parser
                 if ($token->value === '+' || $token->value === '-') {
                     // TODO review:
                     // Given the case '+ -2 -9...' the first token '+'
-                    // is considered here as arithmetic operator, and
-                    // followed by a signed literal '-2'. But maybe it would
-                    // better consider a different classification, here
-                    // are the option (* current):
+                    // is considered here as arithmetic operator followed
+                    // by a signed literal '-2'. But maybe it would better
+                    // consider a different token classification:
+                    // are the option (* current implementation):
                     // 1*) Operator '+' followed by signed literal '-2'
                     // 2) create a single signed literal '+ -2' instead two
                     // 3) consider it as literal (with zero value) '+'

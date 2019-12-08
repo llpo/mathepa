@@ -21,7 +21,7 @@ class Token
     const TYPE_FUNCTION                 = 'function'; // function's name
     const TYPE_OPENING_BRAKET_FUNCTION  = 'opening_bracket_function'; // (
     const TYPE_CLOSING_BRAKET_FUNCTION  = 'closing_bracket_function'; // )
-    const TYPE_COMMA_FUNCTION           = 'comma_function'; // comma inside parameter's func(x,y)
+    const TYPE_COMMA_FUNCTION           = 'comma_function'; // e.g. func(x,y)
     const TYPE_VARIABLE                 = 'variable'; // ASCI name, e.g. var1
     const TYPE_TERNARY_OPERATOR_THEN    = 'ternary_operator_then'; // ?
     const TYPE_TERNARY_OPERATOR_ELSE    = 'ternary_operator_else'; // :
@@ -230,7 +230,7 @@ class Token
     /**
      *  @param string $name
      *  @throws \UnexpectedValueException
-     *  @return miexed
+     *  @return mixed
      */
     public function __get($name)
     {
