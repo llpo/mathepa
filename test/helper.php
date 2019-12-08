@@ -13,7 +13,7 @@ use Symfony\Component\VarDumper\Dumper\HtmlDumper;
  * @param array  $parameters Array of parameters to pass into method.
  * @return mixed
  */
-function invokeMethod(&$object, $methodName, array $parameters = [])
+function invokeMethod(object &$object, string $methodName, array $parameters = [])
 {
     $reflection = new \ReflectionClass(get_class($object));
     $method = $reflection->getMethod($methodName);
