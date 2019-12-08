@@ -1,6 +1,5 @@
-FROM php:7.2-cli-alpine
+FROM php:7.4-cli-alpine
 
-# Install tzdata and change to Europe/Berlin
 RUN  set -x && \
     apk --update add tzdata && \
     ln -sf /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
