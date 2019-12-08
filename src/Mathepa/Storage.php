@@ -11,7 +11,7 @@ use Mathepa\Exception\InvalidVariableException;
 class Storage implements \Iterator
 {
     /**
-     * Associative array, where:
+     * Associative array where:
      *  - key => variable name
      *  - value => array of tokens
      *
@@ -146,7 +146,7 @@ class Storage implements \Iterator
     public function toArray(): array
     {
         $variables = [];
-        foreach ($this->storage as $name => $tokens) {
+        foreach (array_keys($this->storage) as $name) {
             $variables[$name] = $this->clone($name);
         }
 
