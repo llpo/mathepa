@@ -80,7 +80,7 @@ class Lexer
      *
      * For example, given following expression: '(2 + 3 / (4 - 1) + 10) + 2'
      * It would return two Token objects:
-     * - Token '(' at postion 0
+     * - Token '(' at position 0
      * - Token ')' at position 21
      *
      * @param string $openingTokenValue
@@ -424,9 +424,31 @@ class Lexer
                     }
                     break;
 
-                // Comparison operators: '==' '!=' '<>' '<' '>' '<=' '>='
+                // Comparison operators: '==' '!='
                 case '=':
                 case '!':
+                    $token = new Token(
+                        Token::TYPE_COMPARISON_OPERATOR,
+                        $char,
+                        $pos,
+                        $vpos->line,
+                        $vpos->column
+                    );
+                    if ($nextChar != '=') {
+                        throw new SyntaxErrorException(
+                            sprintf(
+                                'Operator "%s" not supported line %d, column %d',
+                                $char,
+                                $vpos->line,
+                                $vpos->column
+                            )
+                        );
+                    }
+                    $token->setValue($char . $nextChar);
+                    $pos++;
+                    break;
+
+                // Comparison operators: '<>' '<' '>' '<=' '>='
                 case '<':
                 case '>':
                     $token = new Token(
@@ -436,7 +458,7 @@ class Lexer
                         $vpos->line,
                         $vpos->column
                     );
-                    if ($nextChar == '=') {
+                    if ($nextChar == '=' || ($char == '<' && $nextChar == '>')) {
                         $token->setValue($char . $nextChar);
                         $pos++;
                     }

@@ -149,12 +149,48 @@ class ExpressionTest extends TestCase
      */
     public function wrongExpressions()
     {
-        // Expression | Expected error message
+        // Expression | variables | Expected error message
         return [
-            ['40 / eval("return 2+1;")', 'Unknown function name "eval"'],
-            ['sin()', 'sin() expects exactly 1 parameter'],
-            ['cos(deg2rad(90, 180))', 'deg2rad() expects exactly 1 parameter'],
-            ['9 > 8 ? 1 :', 'Unexpected token ":" in line 1, column 11'],
+            [
+                '40 / eval("return 2+1;")',
+                [],
+                'Unknown function name "eval"'
+            ],
+            [
+                'sin()',
+                [],
+                'sin() expects exactly 1 parameter'
+            ],
+            [
+                'cos(deg2rad(90, 180))',
+                [],
+                'deg2rad() expects exactly 1 parameter'
+            ],
+            [
+                '9 > 8 ? 1 :',
+                [],
+                'Unexpected token ":" in line 1, column 11'
+            ],
+            [
+                '33 >> 44',
+                [],
+                'Unexpected token ">" in line 1, column 5'
+            ],
+            [
+                '33 >< 44',
+                [],
+                'Unexpected token "<" in line 1, column 5'
+            ],
+            [
+                '100 = 200',
+                [],
+                'Operator "=" not supported line 1, column 5'
+            ],
+            [
+                '!var1 + var2',
+                ['var1' => 2, 'var2'=> 4],
+                'Operator "!" not supported line 1, column 1'
+            ],
         ];
     }
 
@@ -162,10 +198,15 @@ class ExpressionTest extends TestCase
      * @dataProvider wrongExpressions
      * @test
      */
-    public function testExceptionWithWrongExpressons($expression, $message)
+    public function testExceptionWithWrongExpressons($expression, $variables, $message)
     {
         $this->expectException(InvalidExpressionException::class);
         $this->expectExceptionMessage($message);
+
+        $m = new Expression();
+        foreach ($variables as $name => $value) {
+            $m->setVariable($name, $value);
+        }
 
         (new Expression())->setExpression($expression)->evaluate();
     }

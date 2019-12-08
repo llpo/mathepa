@@ -80,7 +80,7 @@ class ParserTest extends TestCase
      */
     public function syntaxErrorBecauseOfCommaFollowedByALogicalOperator()
     {
-        $tokens = Lexer::tokenize(', =>');
+        $tokens = Lexer::tokenize(', >=');
         $errors = Parser::checkGrammar(...$tokens);
         $this->assertEquals(
             'Unexpected token "," in line 1, column 1',
@@ -121,7 +121,7 @@ class ParserTest extends TestCase
      * @group wrong-syntax
      * @test
      */
-    public function syntaxErrorMultilineExpression()
+    public function syntaxErrorInMultilineExpression()
     {
         $tokens = Lexer::tokenize(
             '(
@@ -182,7 +182,7 @@ class ParserTest extends TestCase
     /**
      * @test
      */
-    public function testMaximuNestingReferences()
+    public function testMaximumNestingReferences()
     {
         $variables = new Storage();
         $variables->set('var1', ...Lexer::tokenize('var2'))
