@@ -19,7 +19,7 @@ direct usage of _[eval][1]_.
 - Definition of variables to parametrize values
 - Ternary operator supported
 - Most common [math functions](src/Mathepa/Lexer.php) are white listed
-- Variables can contain complex expressions and reference other  variables
+- Variables can contain complex expressions and reference other variables
 - _[eval][1]_ function will be called only with valid expressions
 - No external dependencies required
 
@@ -34,7 +34,7 @@ only when:
 - Syntax is valid, i.e. all tokens are identified. E.g. "3.1.4" would be invalid
 - Grammar is valid, i.e. a literal can't be next to a variable
 - Functions are [white listed](src/Mathepa/Lexer.php)
-- Variables are valid expressions as well
+- Variables contains valid expressions
 - No circular references found
 
 Notice Mathepa does not check the number of formal parameters of a
@@ -48,14 +48,14 @@ PHP Warning:  abs() expects exactly 1 parameter, 2 given in php shell code on li
 
 Calling functions in Mathepa either with wrong number of parameters or wrong
 syntax will always throw an Exception. In the next examples _eval_ is called
-because there's no invalid syntax, grammar or unknown function for instance:
+because there's no invalid syntax, grammar or unknown function:
 
 ```php
 (new Expression('cos()'))->evaluate();
 (new Expression('cos(30, 60)'))->evaluate();
 ```
 
-Following examples will throw an exception because of syntax error. In these
+Following examples will throw an exception because of syntax error. In the following
 cases _eval_ is never called:
 
 ```php
@@ -95,7 +95,7 @@ $height = $m->setExpression('distance * tan(degrees)')->evaluate();
 
 ### Complex expressions
 
-The ternary operator in expressions is allowed, notice but only the long syntax
+The ternary operator in expressions is allowed, but only the long syntax
 is supported, i.e. (expr1) ? (expr2) : (expr3).
 
 ```php
